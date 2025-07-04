@@ -3,15 +3,18 @@
 
 class SpareseMatrix {
 private:
-    int rows;
-    int cols;
-    std::map<int64_t, float> data;
+    int _rows;
+    int _cols;
+    std::map<int64_t, float> _data;
 
 public:
     SpareseMatrix(int rows, int cols);
     float& operator()(int row, int col);
     float operator()(int row, int col) const;
     size_t size() const;
+    size_t rows() const;
+    size_t cols() const;
+    std::map<int64_t, float> fetchData() const;
 };
 
 class Vector {
