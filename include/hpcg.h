@@ -1,5 +1,7 @@
+#ifndef HPCG_H
+#define HPCG_H
+
 #include <map>
-#include <vector>
 
 struct SpareseMatrix {
     int rows;
@@ -32,6 +34,4 @@ public:
     Vector solve(const SpareseMatrix& A, const Vector& b) const;
 };
 
-class ProblemSetup{
-
-};
+#endif
