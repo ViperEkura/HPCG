@@ -37,14 +37,13 @@ ConjugateGradientSolver::ConjugateGradientSolver(float tolerance, int maxIter)
 Vector ConjugateGradientSolver::solve(const SpareseMatrix& A, const Vector& b) const {
     // init x
     Vector x(b.size);
-    
+    std::fill(x.data, x.data + x.size, 0.0f);
+
     // init r = b - A*x
     Vector r(b.size);
-    {
-        Vector Ax(b.size);
-        SpMV(A, x, Ax);
-        WAXPBY(b, Ax, r, 1.0f, -1.0f); // r = b - Ax
-    }
+    Vector Ax(b.size);
+    SpMV(A, x, Ax);
+    WAXPBY(b, Ax, r, 1.0f, -1.0f);
     
     // init p = r
     Vector p = r;
