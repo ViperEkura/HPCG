@@ -3,73 +3,74 @@
 
 //ConjugateGradientSolver
 
-float dot(const Vector& a, const Vector& b) {
+float DDOT(const Vector& a, const Vector& b) {
     float result = 0.0f;
     for (int i = 0; i < a.size; ++i) {
         result += a.data[i] * b.data[i];
     }
     return result;
 }
-
-ConjugateGradientSolver::ConjugateGradientSolver(float tolerance, int maxIter) :maxIter(maxIter), tolerance(tolerance){}
-
-Vector ConjugateGradientSolver::solve(const SpareseMatrix& A, const Vector& b) const 
+void WAXPBY(const Vector& a, const Vector& b, Vector& result, float alpha=1, float beta=1)
 {
-    //init x0
-    Vector x0(b.size);
-    
-    //init r0 = b - Ax0
-    Vector r0 = b;
-    for (int i = 0; i < A.rows; ++i) {
-        float sum = 0.0f;
-        for (int j = 0; j < A.cols; ++j) {
-            sum += A(i, j) * x0.data[j];
-        }
-        r0.data[i] -= sum;
+    for (int i = 0; i < result.size; ++i) {
+        result.data[i] = alpha * a.data[i] + beta * b.data[i];
     }
+}
 
-    //init p0 = r0
-    Vector p0 = r0;
+void SpMV(const SpareseMatrix& A, const Vector& x, Vector& result) {
+    std::fill(result.data, result.data + result.size, 0.0f);
+    
+    for (const std::pair<int, float>& entry : A.data) {
+        int index = entry.first;
+        int row = index / A.cols;
+        int col = index % A.cols;
+        result.data[row] += entry.second * x.data[col];
+    }
+}
 
-    float rsold = dot(r0, r0);
-    if (rsold < tolerance) return x0;
+ConjugateGradientSolver::ConjugateGradientSolver(float tolerance, int maxIter)
+{
+    this->maxIter = maxIter;
+    this->tolerance = tolerance;
+}
 
-    for (int k = 0; k < maxIter; ++k) {
-        // Compute alpha_k
-        float Ap_dot_p = 0.0f;
-        for (int i = 0; i < A.rows; ++i) {
-            float sum = 0.0f;
-            for (int j = 0; j < A.cols; ++j) {
-                sum += A(i, j) * p0.data[j];
-            }
-            Ap_dot_p += p0.data[i] * sum;
-        }
-        float alpha = rsold / Ap_dot_p;
+Vector ConjugateGradientSolver::solve(const SpareseMatrix& A, const Vector& b) const {
+    // init x
+    Vector x(b.size);
+    
+    // init r = b - A*x
+    Vector r(b.size);
+    {
+        Vector Ax(b.size);
+        SpMV(A, x, Ax);
+        WAXPBY(b, Ax, r, 1.0f, -1.0f); // r = b - Ax
+    }
+    
+    // init p = r
+    Vector p = r;
+    
+    float rsold = DDOT(r, r);
+    if (rsold < tolerance * tolerance) return x;
 
-        // Update x_k+1 = x_k + alpha_k * p_k
-        for (int i = 0; i < x0.size; ++i) {
-            x0.data[i] += alpha * p0.data[i];
-        }
+    Vector Ap(b.size);
+    
+    // iteration
+    for (int iter = 0; iter < maxIter; ++iter) {
+        SpMV(A, p, Ap); // Ap = A*p
+        float pAp = DDOT(p, Ap);
+        if (pAp == 0) break;
 
-        // Update r_k+1 = r_k - alpha_k * A * p_k
-        for (int i = 0; i < A.rows; ++i) {
-            float sum = 0.0f;
-            for (int j = 0; j < A.cols; ++j) {
-                sum += A(i, j) * p0.data[j];
-            }
-            r0.data[i] -= alpha * sum;
-        }
-
-        // Compute beta_k and update p_k+1
-        float rsnew = dot(r0, r0);
-        if (sqrt(rsnew) < tolerance) break;
-        float beta = rsnew / rsold;
-        for (int i = 0; i < p0.size; ++i) {
-            p0.data[i] = r0.data[i] + beta * p0.data[i];
-        }
-
+        float alpha = rsold / pAp; 
+        WAXPBY(p, x, x, alpha, 1.0f); // x += alpha * p
+        WAXPBY(r, Ap, r, 1.0f, -alpha); //  r -= alpha * Ap
+        float rsnew = DDOT(r, r); 
+        if (rsnew < tolerance * tolerance) break; 
+         
+        float beta = rsnew / rsold; 
+        WAXPBY(r, p, p, 1.0f, beta); //  p = r + beta * p
+        
         rsold = rsnew;
     }
-
-    return x0;
+    
+    return x;
 }
