@@ -6,6 +6,9 @@ struct SpareseMatrix {
     int cols;
     std::map<int, float> data;
     SpareseMatrix(int rows, int cols);
+
+    float& operator()(int row, int col);
+    float operator()(int row, int col) const;
 };
 
 struct Vector {
