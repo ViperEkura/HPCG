@@ -1,10 +1,12 @@
 #include <cmath>
+#include <omp.h>
 #include "hpcg.h"
 
 //ConjugateGradientSolver
 
 float DDOT(const Vector& a, const Vector& b) {
     float result = 0.0f;
+    #pragma omp parallel for reduction(+:result)
     for (int i = 0; i < a.size; ++i) {
         result += a.data[i] * b.data[i];
     }
@@ -12,6 +14,7 @@ float DDOT(const Vector& a, const Vector& b) {
 }
 void WAXPBY(const Vector& a, const Vector& b, Vector& result, float alpha=1, float beta=1)
 {
+    #pragma omp parallel for
     for (int i = 0; i < result.size; ++i) {
         result.data[i] = alpha * a.data[i] + beta * b.data[i];
     }
