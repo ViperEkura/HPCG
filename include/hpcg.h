@@ -13,7 +13,7 @@ struct SpareseMatrix {
     SpareseMatrix(unsigned int rows, unsigned int cols);
     ~SpareseMatrix();
     void constructFromTriplets(unsigned int nnz, 
-        const unsigned int* row_indices, const unsigned int* col_indices, const float* values);
+        unsigned int* row_indices, unsigned int* col_indices, float* values);
 };
 
 struct Vector {

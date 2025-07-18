@@ -1,4 +1,4 @@
-#include <memory>
+#include <algorithm>
 #include "hpcg.h"
 
 

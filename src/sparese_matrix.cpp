@@ -44,9 +44,9 @@ SpareseMatrix::~SpareseMatrix() {
 
 void SpareseMatrix::constructFromTriplets(
     unsigned int nnz, 
-    const unsigned int* row_indices, 
-    const unsigned int* col_indices, 
-    const float* values
+    unsigned int* row_indices, 
+    unsigned int* col_indices, 
+    float* values
 )
 {
     this->nnz = nnz;
@@ -56,6 +56,7 @@ void SpareseMatrix::constructFromTriplets(
     std::sort(triplets.begin(), triplets.end(), TripletCompare());
 
     row_ptr = new unsigned int[rows + 1];
+    std::fill(row_ptr, row_ptr + rows + 1, 0);
     for (const Triplet& t : triplets) row_ptr[t.row + 1]++;
     for (unsigned int i = 1; i <= rows; ++i) row_ptr[i] += row_ptr[i - 1];
     

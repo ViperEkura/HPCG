@@ -20,35 +20,30 @@ SpareseMatrix generate_large_matrix(int n) {
         // 上下边元素
         if (i > 0) {
             row_indices.push_back(i);
-            col_indices.push_back(i - 1);
+            col_indices.push_back(i-1);
             values.push_back(-1.0f);
         }
-        if (i < n - 1) {
+        if (i < n-1) {
             row_indices.push_back(i);
-            col_indices.push_back(i + 1);
+            col_indices.push_back(i+1);
             values.push_back(-1.0f);
         }
 
         // 跨行元素
-        if (i > n / 2) {
+        if (i > n/2) {
             row_indices.push_back(i);
-            col_indices.push_back(i - n / 2);
+            col_indices.push_back(i - n/2);
             values.push_back(-0.3f);
         }
-        if (i < n - n / 2) {
+        if (i < n - n/2) {
             row_indices.push_back(i);
-            col_indices.push_back(i + n / 2);
+            col_indices.push_back(i + n/2);
             values.push_back(-0.3f);
         }
     }
 
     SpareseMatrix A(n, n);
-    A.constructFromTriplets(
-        row_indices.size(), 
-        row_indices.data(), 
-        col_indices.data(), 
-        values.data()
-    );
+    A.constructFromTriplets(row_indices.size(), row_indices.data(), col_indices.data(), values.data());
     return A;
 }
 int main() {
@@ -65,7 +60,7 @@ int main() {
         b.data[i] = (i % 10 == 0) ? 1.0f : 0.0f;  // 每10个元素一个脉冲
     }
     
-    ConjugateGradientSolver solver(1e-6f, 100);
+    ConjugateGradientSolver solver(1e-6f, 5000);
     auto solve_start = std::chrono::high_resolution_clock::now();
     Vector x = solver.solve(A, b);
     auto solve_end = std::chrono::high_resolution_clock::now();

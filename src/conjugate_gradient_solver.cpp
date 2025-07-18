@@ -26,11 +26,10 @@ void SpMV(const SpareseMatrix& A, const Vector& x, Vector& result) {
     std::fill(result.data, result.data + result.size, 0.0f);
     
     #pragma omp parallel for
-    for (int row = 0; row < A.rows; ++row) 
-    {
-        for (int idx = A.row_ptr[row]; idx < A.row_ptr[row + 1]; ++idx) 
-        {
+    for (int row = 0; row < A.rows; ++row) {
+        for (int idx = A.row_ptr[row]; idx < A.row_ptr[row + 1]; ++idx) {
             int col = A.col_indices[idx];
+            #pragma omp atomic
             result.data[row] += A.values[idx] * x.data[col];
         }
     }
