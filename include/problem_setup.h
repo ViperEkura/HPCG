@@ -13,8 +13,6 @@ struct BoundaryType
 class ProblemSetup {
 private:
     int nx, ny, nz;
-    float tolerance;
-    int maxIter;
     BoundaryType boundaryType;
 
 public:
