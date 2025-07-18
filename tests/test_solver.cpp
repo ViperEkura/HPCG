@@ -1,15 +1,18 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <cmath> 
 #include "hpcg.h"
 
 struct Coord3D {
     int i, j, k;
 };
 
-SpareseMatrix generate_large_matrix(int grid_size, std::vector<Coord3D>& coords) {
+
+void generate_system(int grid_size, SpareseMatrix& A, Vector& b, std::vector<Coord3D>& coords) {
     const unsigned int total_nodes = grid_size * grid_size * grid_size;
-    SpareseMatrix A(total_nodes, total_nodes);
+    A = SpareseMatrix(total_nodes, total_nodes);
+    b = Vector(total_nodes);
     
     coords.clear();
     coords.reserve(total_nodes);
@@ -20,24 +23,24 @@ SpareseMatrix generate_large_matrix(int grid_size, std::vector<Coord3D>& coords)
     row_indices.reserve(total_nodes * 7);
     col_indices.reserve(total_nodes * 7);
     values.reserve(total_nodes * 7);
+    const float L = static_cast<float>(grid_size - 1);  
 
     for (int k = 0; k < grid_size; ++k) {
         for (int j = 0; j < grid_size; ++j) {
             for (int i = 0; i < grid_size; ++i) {
                 coords.push_back({i, j, k});
-                
                 const unsigned int node_idx = k * grid_size * grid_size + j * grid_size + i;
                 
                 if (i == 0 || i == grid_size-1 || 
                     j == 0 || j == grid_size-1 || 
-                    k == 0 || k == grid_size-1
-                ) 
+                    k == 0 || k == grid_size-1) 
                 {
                     row_indices.push_back(node_idx);
                     col_indices.push_back(node_idx);
                     values.push_back(1.0f);
+                    b.data[node_idx] = 1.0f;
                 }
-                else
+                else 
                 {
                     row_indices.push_back(node_idx);
                     col_indices.push_back(node_idx);
@@ -61,19 +64,24 @@ SpareseMatrix generate_large_matrix(int grid_size, std::vector<Coord3D>& coords)
                         col_indices.push_back(neighbor_idx);
                         values.push_back(1.0f);
                     }
+                    
+                    const float x = static_cast<float>(i) / L;
+                    const float y = static_cast<float>(j) / L;
+                    const float z = static_cast<float>(k) / L;
+                    const float sin_term = sin(M_PI * x) * sin(M_PI * y) * sin(M_PI * z);
+                    const float f_val = (3.0f * M_PI * M_PI) / (L * L) * sin_term;
+                    b.data[node_idx] = f_val;
                 }
             }
         }
     }
 
-    // 构造稀疏矩阵 (移除了不必要的类型转换)
     A.constructFromTriplets(
         static_cast<unsigned int>(values.size()),
         row_indices.data(),
         col_indices.data(),
         values.data()
     );
-    return A;
 }
 
 int main() {
@@ -82,16 +90,14 @@ int main() {
     auto start = std::chrono::high_resolution_clock::now();
     
     std::vector<Coord3D> coords;
-    SpareseMatrix A = generate_large_matrix(N, coords);
+    SpareseMatrix A;
+    Vector b;
+    generate_system(N, A, b, coords);
     
     printf("Matrix generated (nnz = %llu)\n", A.nnz);
     printf("Matrix size: %llu x %llu\n", total_nodes, total_nodes);
     
-    Vector b(total_nodes);
-    #pragma omp parallel for
-    for (int idx = 0; idx < total_nodes; ++idx) {
-        b.data[idx] = (idx % 10 == 0) ? 1.0f : 0.0f;
-    }
+    
     
     ConjugateGradientSolver solver(1e-6f, 5000);
     auto solve_start = std::chrono::high_resolution_clock::now();

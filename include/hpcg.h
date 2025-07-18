@@ -20,6 +20,7 @@ struct Vector {
     float* data;
     int size;
 
+    Vector();
     Vector(int size);
     Vector(const Vector& other);
     ~Vector();

@@ -3,6 +3,12 @@
 
 
 // Vector
+Vector::Vector()
+{
+    this->size = 0;
+    this->data = nullptr;
+}
+
 Vector::Vector(int size)
 {
     this->size = size;
