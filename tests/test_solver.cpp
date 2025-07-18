@@ -3,80 +3,114 @@
 #include <chrono>
 #include "hpcg.h"
 
-SpareseMatrix generate_large_matrix(int n) {
+struct Coord3D {
+    int i, j, k;
+};
+
+SpareseMatrix generate_large_matrix(int grid_size, std::vector<Coord3D>& coords) {
+    const unsigned int total_nodes = grid_size * grid_size * grid_size;
+    SpareseMatrix A(total_nodes, total_nodes);
+    
+    coords.clear();
+    coords.reserve(total_nodes);
+    
     std::vector<unsigned int> row_indices;
     std::vector<unsigned int> col_indices;
     std::vector<float> values;
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dist(0.5f, 1.5f);
+    row_indices.reserve(total_nodes * 7);
+    col_indices.reserve(total_nodes * 7);
+    values.reserve(total_nodes * 7);
 
-    for (int i = 0; i < n; ++i) {
-        // 对角线元素
-        row_indices.push_back(i);
-        col_indices.push_back(i);
-        values.push_back(4.0f + dist(gen));
-
-        // 上下边元素
-        if (i > 0) {
-            row_indices.push_back(i);
-            col_indices.push_back(i-1);
-            values.push_back(-1.0f);
-        }
-        if (i < n-1) {
-            row_indices.push_back(i);
-            col_indices.push_back(i+1);
-            values.push_back(-1.0f);
-        }
-
-        // 跨行元素
-        if (i > n/2) {
-            row_indices.push_back(i);
-            col_indices.push_back(i - n/2);
-            values.push_back(-0.3f);
-        }
-        if (i < n - n/2) {
-            row_indices.push_back(i);
-            col_indices.push_back(i + n/2);
-            values.push_back(-0.3f);
+    for (int k = 0; k < grid_size; ++k) {
+        for (int j = 0; j < grid_size; ++j) {
+            for (int i = 0; i < grid_size; ++i) {
+                coords.push_back({i, j, k});
+                
+                const unsigned int node_idx = k * grid_size * grid_size + j * grid_size + i;
+                
+                if (i == 0 || i == grid_size-1 || 
+                    j == 0 || j == grid_size-1 || 
+                    k == 0 || k == grid_size-1
+                ) 
+                {
+                    row_indices.push_back(node_idx);
+                    col_indices.push_back(node_idx);
+                    values.push_back(1.0f);
+                }
+                else
+                {
+                    row_indices.push_back(node_idx);
+                    col_indices.push_back(node_idx);
+                    values.push_back(-6.0f);
+                    
+                    const int neighbors[6][3] = 
+                    {
+                        {i-1, j, k}, {i+1, j, k},
+                        {i, j-1, k}, {i, j+1, k},
+                        {i, j, k-1}, {i, j, k+1}
+                    };
+                    
+                    for (int n = 0; n < 6; ++n) 
+                    {
+                        const int ni = neighbors[n][0];
+                        const int nj = neighbors[n][1];
+                        const int nk = neighbors[n][2];
+                        const unsigned int neighbor_idx = nk * grid_size * grid_size + nj * grid_size + ni;
+                        
+                        row_indices.push_back(node_idx);
+                        col_indices.push_back(neighbor_idx);
+                        values.push_back(1.0f);
+                    }
+                }
+            }
         }
     }
 
-    SpareseMatrix A(n, n);
-    A.constructFromTriplets(row_indices.size(), row_indices.data(), col_indices.data(), values.data());
+    // 构造稀疏矩阵 (移除了不必要的类型转换)
+    A.constructFromTriplets(
+        static_cast<unsigned int>(values.size()),
+        row_indices.data(),
+        col_indices.data(),
+        values.data()
+    );
     return A;
 }
+
 int main() {
-    const int N = 20000;  // 10,000 x 10,000 
+    const int N = 25; 
+    const unsigned long long total_nodes = static_cast<unsigned long long>(N) * N * N;
     auto start = std::chrono::high_resolution_clock::now();
     
-
-    SpareseMatrix A = generate_large_matrix(N);
-    std::cout << "Matrix generated (nnz = " << N * N << ")" << std::endl;
+    std::vector<Coord3D> coords;
+    SpareseMatrix A = generate_large_matrix(N, coords);
     
-    Vector b(N);
+    printf("Matrix generated (nnz = %llu)\n", A.nnz);
+    printf("Matrix size: %llu x %llu\n", total_nodes, total_nodes);
+    
+    Vector b(total_nodes);
     #pragma omp parallel for
-    for (int i = 0; i < N; ++i) {
-        b.data[i] = (i % 10 == 0) ? 1.0f : 0.0f;  // 每10个元素一个脉冲
+    for (int idx = 0; idx < total_nodes; ++idx) {
+        b.data[idx] = (idx % 10 == 0) ? 1.0f : 0.0f;
     }
     
     ConjugateGradientSolver solver(1e-6f, 5000);
     auto solve_start = std::chrono::high_resolution_clock::now();
     Vector x = solver.solve(A, b);
     auto solve_end = std::chrono::high_resolution_clock::now();
-    
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(solve_end - solve_start);
-    std::cout << "Solve completed in " << duration.count() << " ms" << std::endl;
+    printf("Solve completed in %lld ms\n", duration.count());
     
-
-    std::cout << "\nFirst 10 elements of solution:" << std::endl;
-    for (int i = 0; i < 10; ++i) {
-        std::cout << "x[" << i << "] = " << x.data[i] << std::endl;
+    printf("\nFirst 10 elements of solution (with coordinates):\n");
+    for (int idx = 0; idx < 10 && idx < total_nodes; ++idx) {
+        const auto& c = coords[idx];
+        printf("x[%d]: (%d, %d, %d) = %f\n", idx, c.i, c.j, c.k, x.data[idx]);
     }
     
-    std::cout << "\nLast 10 elements of solution:" << std::endl;
-    for (int i = N-10; i < N; ++i) {
-        std::cout << "x[" << i << "] = " << x.data[i] << std::endl;
+    printf("\nLast 10 elements of solution (with coordinates):\n");
+    int start_idx = (total_nodes >= 10) ? total_nodes - 10 : 0;
+    for (int idx = start_idx; idx < total_nodes; ++idx) {
+        const auto& c = coords[idx];
+        printf("x[%d]: (%d, %d, %d) = %f\n", idx, c.i, c.j, c.k, x.data[idx]);
     }
     
     return 0;
