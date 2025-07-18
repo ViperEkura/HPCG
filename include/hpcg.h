@@ -1,16 +1,19 @@
 #ifndef HPCG_H
 #define HPCG_H
 
-#include <map>
-
+ // CSR Sparse Matrix
 struct SpareseMatrix {
-    int rows;
-    int cols;
-    std::map<int, float> data;
-    SpareseMatrix(int rows, int cols);
-
-    float& operator()(int row, int col);
-    float operator()(int row, int col) const;
+    unsigned int rows;
+    unsigned int cols;
+    unsigned int nnz;
+    unsigned int* row_ptr;
+    unsigned int* col_indices;
+    float* values;
+    SpareseMatrix();
+    SpareseMatrix(unsigned int rows, unsigned int cols);
+    ~SpareseMatrix();
+    void constructFromTriplets(unsigned int nnz, 
+        const unsigned int* row_indices, const unsigned int* col_indices, const float* values);
 };
 
 struct Vector {

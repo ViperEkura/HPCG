@@ -7,7 +7,8 @@
 float DDOT(const Vector& a, const Vector& b) {
     float result = 0.0f;
     #pragma omp parallel for reduction(+:result)
-    for (int i = 0; i < a.size; ++i) {
+    for (int i = 0; i < a.size; ++i) 
+    {
         result += a.data[i] * b.data[i];
     }
     return result;
@@ -15,7 +16,8 @@ float DDOT(const Vector& a, const Vector& b) {
 void WAXPBY(const Vector& a, const Vector& b, Vector& result, float alpha=1, float beta=1)
 {
     #pragma omp parallel for
-    for (int i = 0; i < result.size; ++i) {
+    for (int i = 0; i < result.size; ++i) 
+    {
         result.data[i] = alpha * a.data[i] + beta * b.data[i];
     }
 }
@@ -23,11 +25,14 @@ void WAXPBY(const Vector& a, const Vector& b, Vector& result, float alpha=1, flo
 void SpMV(const SpareseMatrix& A, const Vector& x, Vector& result) {
     std::fill(result.data, result.data + result.size, 0.0f);
     
-    for (const std::pair<int, float>& entry : A.data) {
-        int index = entry.first;
-        int row = index / A.cols;
-        int col = index % A.cols;
-        result.data[row] += entry.second * x.data[col];
+    #pragma omp parallel for
+    for (int row = 0; row < A.rows; ++row) 
+    {
+        for (int idx = A.row_ptr[row]; idx < A.row_ptr[row + 1]; ++idx) 
+        {
+            int col = A.col_indices[idx];
+            result.data[row] += A.values[idx] * x.data[col];
+        }
     }
 }
 
