@@ -47,9 +47,12 @@ SparseMatrix::SparseMatrix(const SparseMatrix &other)
 }
 
 SparseMatrix::SparseMatrix(unsigned int rows, unsigned int cols) 
-    : rows(rows), cols(cols), nnz(0), row_ptr(nullptr), col_indices(nullptr), values(nullptr)
 {
-    // std::fill(row_ptr, row_ptr + rows + 1, 0);
+    this->rows = rows;
+    this->cols = cols;
+    this->row_ptr = nullptr;
+    this->col_indices = nullptr;
+    this->values = nullptr;
 }
 
 
