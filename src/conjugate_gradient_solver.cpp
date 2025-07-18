@@ -22,7 +22,7 @@ void WAXPBY(const Vector& a, const Vector& b, Vector& result, float alpha=1, flo
     }
 }
 
-void SpMV(const SpareseMatrix& A, const Vector& x, Vector& result) {
+void SpMV(const SparseMatrix& A, const Vector& x, Vector& result) {
     std::fill(result.data, result.data + result.size, 0.0f);
     
     #pragma omp parallel for
@@ -41,7 +41,7 @@ ConjugateGradientSolver::ConjugateGradientSolver(float tolerance, int maxIter)
     this->tolerance = tolerance;
 }
 
-Vector ConjugateGradientSolver::solve(const SpareseMatrix& A, const Vector& b) const {
+Vector ConjugateGradientSolver::solve(const SparseMatrix& A, const Vector& b) const {
     // init x
     Vector x(b.size);
     std::fill(x.data, x.data + x.size, 0.0f);

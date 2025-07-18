@@ -13,6 +13,7 @@ Vector::Vector(int size)
 {
     this->size = size;
     this->data = new float[size];
+    std::fill(data, data + size, 0.0f);
 }
 
 Vector::Vector(const Vector& other)
@@ -25,11 +26,20 @@ Vector::Vector(const Vector& other)
     }
 }
 
+
+Vector::Vector(Vector&& other) noexcept
+{
+    this->size = other.size;
+    other.size = 0;
+    other.data = nullptr;
+}
+
 Vector::~Vector()
 {
     if (this->data != nullptr)
     {
         delete[] this->data;
+        this->size = 0;
         this->data = nullptr;
     }
 }

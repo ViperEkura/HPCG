@@ -5,9 +5,10 @@
 
 struct BoundaryType
 {
-
+    // Dirichlet boundary condition flag for each face
+    bool left, right, front, back, top, bottom;
+    BoundaryType() : left(true), right(true), front(true), back(true), top(true), bottom(true) {}
 };
-
 
 class ProblemSetup {
 private:
@@ -18,10 +19,7 @@ private:
 
 public:
     ProblemSetup(int nx, int ny, int nz);
-    
-    SpareseMatrix generateMatrix() const;
+    SparseMatrix generateMatrix() const;
     Vector generateRHS() const;
-    void configureSolver(ConjugateGradientSolver& solver) const;
 };
-
 #endif
