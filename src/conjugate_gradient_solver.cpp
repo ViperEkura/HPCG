@@ -27,11 +27,12 @@ void SpMV(const SparseMatrix& A, const Vector& x, Vector& result) {
     
     #pragma omp parallel for
     for (int row = 0; row < A.rows; ++row) {
+        float seg_sum = 0;
         for (int idx = A.row_ptr[row]; idx < A.row_ptr[row + 1]; ++idx) {
             int col = A.col_indices[idx];
-            #pragma omp atomic
-            result.data[row] += A.values[idx] * x.data[col];
+            seg_sum += A.values[idx] * x.data[col];
         }
+        result.data[row] = seg_sum;
     }
 }
 
