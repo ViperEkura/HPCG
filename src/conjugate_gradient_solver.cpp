@@ -5,13 +5,13 @@
 //ConjugateGradientSolver
 
 float DDOT(const Vector& a, const Vector& b) {
-    float result = 0.0f;
+    double result = 0;
     #pragma omp parallel for reduction(+:result)
     for (int i = 0; i < a.size; ++i) 
     {
         result += a.data[i] * b.data[i];
     }
-    return result;
+    return (float)result;
 }
 void WAXPBY(const Vector& a, const Vector& b, Vector& result, float alpha=1, float beta=1)
 {
@@ -27,12 +27,12 @@ void SpMV(const SparseMatrix& A, const Vector& x, Vector& result) {
     
     #pragma omp parallel for
     for (int row = 0; row < A.rows; ++row) {
-        float seg_sum = 0;
+        double seg_sum = 0;
         for (int idx = A.row_ptr[row]; idx < A.row_ptr[row + 1]; ++idx) {
             int col = A.col_indices[idx];
             seg_sum += A.values[idx] * x.data[col];
         }
-        result.data[row] = seg_sum;
+        result.data[row] = (float)seg_sum;
     }
 }
 
